@@ -1,0 +1,8 @@
+{
+  "name": "MotoMate",
+  "description": "A premium motorcycle companion app for smart and safe riding, featuring navigation, community leaderboards, and AI-powered ride assistance.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ]
+}

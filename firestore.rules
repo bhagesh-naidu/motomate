@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {uid}
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - name: string (required, 1-50 chars)
+    //   - bike: string (required, 1-100 chars)
+    //   - mileage: string (optional)
+    //   - points: int (optional)
+    //   - ridesCount: int (optional)
+    //   - totalDistance: int (optional)
+    //   - rank: string (optional, enum: Scout, Pathfinder, Legend)
+    //   - memberSince: timestamp (optional)
+    //
+    // Collection: rides
+    // Document ID: {rideId}
+    // Fields:
+    //   - uid: string (required, matches auth.uid)
+    //   - destination: string (required, 1-100 chars)
+    //   - distance: int (required, positive)
+    //   - duration: string (optional)
+    //   - timestamp: timestamp (required)
+    //
+    // Collection: expenses
+    // Document ID: {expenseId}
+    // Fields:
+    //   - uid: string (required, matches auth.uid)
+    //   - type: string (required, enum: Fuel, Maintenance, Gear, Other)
+    //   - amount: number (required, positive)
+    //   - date: timestamp (required)
+    //   - note: string (optional, max 200 chars)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'bike']) &&
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 50 &&
+             data.bike is string && data.bike.size() > 0 && data.bike.size() <= 100;
+    }
+
+    function isValidRide(data) {
+      return data.keys().hasAll(['uid', 'destination', 'distance', 'timestamp']) &&
+             data.uid == request.auth.uid &&
+             data.destination is string && data.destination.size() > 0 && data.destination.size() <= 100 &&
+             data.distance is int && data.distance >= 0 &&
+             data.timestamp is timestamp;
+    }
+
+    function isValidExpense(data) {
+      let validTypes = ['Fuel', 'Maintenance', 'Gear', 'Other'];
+      return data.keys().hasAll(['uid', 'type', 'amount', 'date']) &&
+             data.uid == request.auth.uid &&
+             data.type in validTypes &&
+             data.amount is number && data.amount > 0 &&
+             data.date is timestamp &&
+             (!('note' in data) || (data.note is string && data.note.size() <= 200));
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    match /rides/{rideId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidRide(request.resource.data);
+      allow update: if isDocOwner() && isValidRide(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /expenses/{expenseId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidExpense(request.resource.data);
+      allow update: if isDocOwner() && isValidExpense(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /live_rides/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || request.auth.uid in resource.data.sharingWith);
+      allow create, update, delete: if isOwner(userId);
+    }
+
+    match /friendships/{friendshipId} {
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.users;
+      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.users;
+      allow update, delete: if isAuthenticated() && request.auth.uid in resource.data.users;
+    }
+  }
+}
