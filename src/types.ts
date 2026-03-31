@@ -29,7 +29,7 @@ import {
   X
 } from 'lucide-react';
 
-export type Screen = 'splash' | 'auth' | 'onboarding' | 'dashboard' | 'navigation' | 'community' | 'profile';
+export type Screen = 'splash' | 'auth' | 'onboarding' | 'dashboard' | 'navigation' | 'community' | 'profile' | 'ride-history';
 
 export interface RiderProfile {
   uid: string;
@@ -41,6 +41,7 @@ export interface RiderProfile {
   totalDistance: number;
   rank: string;
   memberSince: string;
+  photoURL?: string;
 }
 
 export const MOCK_DESTINATIONS = [
@@ -77,7 +78,7 @@ export interface Ride {
 export interface Expense {
   id?: string;
   uid: string;
-  type: 'Fuel' | 'Maintenance' | 'Gear' | 'Other';
+  type: 'Fuel' | 'Maintenance' | 'Gear' | 'Food' | 'Accommodation' | 'Other';
   amount: number;
   date: any;
   note?: string;

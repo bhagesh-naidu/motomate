@@ -74,6 +74,25 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["users", "status"]
+    },
+    "RoadReport": {
+      "title": "Road Report",
+      "description": "Stores real-time reports of road conditions.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "UID of the reporter." },
+        "userName": { "type": "string", "description": "Name of the reporter." },
+        "condition": { "type": "string", "enum": ["wet", "icy", "debris", "construction ahead"], "description": "Type of road condition." },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the report was made." }
+      },
+      "required": ["uid", "condition", "location", "timestamp"]
     }
   },
   "firestore": {
@@ -96,6 +115,10 @@
     "/friendships/{friendshipId}": {
       "schema": "Friendship",
       "description": "User connections."
+    },
+    "/road_reports/{reportId}": {
+      "schema": "RoadReport",
+      "description": "Real-time road condition reports."
     }
   }
 }
